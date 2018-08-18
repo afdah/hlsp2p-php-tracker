@@ -1,45 +1,46 @@
 <?php
-// $redis = new Redis();
+error_reporting(E_ALL ^ E_NOTICE);
+@ini_set('display_errors', 'On');
 
-	error_reporting(E_ALL ^ E_NOTICE);
-	@ini_set('display_errors', 'On');
-	
-$arr = explode('?',$_SERVER['REQUEST_URI']);
-$route = explode('/',$arr[0]);
-switch($route[1]){
-	case'announce':
-		//广播
-		$info_hash = md5($_GET['info_hash']);
-		$device = $_GET['device'];
-		$netType = $_GET['device'];
-		$host = $_GET['host'];
-		$version = $_GET['version'];
-		$tag = $_GET['tag'];
+$route = $_GET['command'];
+$input = file_get_contents("php://input");
+$post_data = json_decode($input, true);
+
+switch($route){
+	case'channel':
+		$channel = $post_data['channel'];
+		$device = $post_data['device'];
+		$netType = $post_data['device'];
+		$host = $post_data['host'];
+		$version = $post_data['version'];
+		$tag = $post_data['tag'];
 		$peer_id = uniqid();
 		
-		$roomDir = 'peers/'.hashDir($info_hash);
+		$roomDir = 'peers/'.$channel;
 		makeDir($roomDir);
 		insertPeer(
 			$roomDir,
 			array(
 				"id"=>$peer_id,
-				"Ip"=>"",
-				"Browser"=>"",
-				"Device"=>$device,
-				"Host"=>$host,
-				"Source"=>0,
-				"P2p"=>0,
-				"ErrsFragLoad"=>0,
-				"ErrsBufStalled"=>0,
-				"ErrsInternalExpt"=>0
+				"device"=>$device,
+				"netType"=>$netType,
+				"host"=>$host,
+				"version"=>$version,
+				"tag"=>$tag,
+				"conns"=>0,
+				"http"=>0,
+				"p2p"=>0,
+				"failConns"=>0
 			)
 		);
 		$out = array(
-			'peer_id'=>$peer_id,
-			'report_limit'=>10,
-			'report_interval'=>15,
-			'heartbeat_interval'=>17,
-			'peers'=>get_peers($roomDir,$peer_id),
+			'ret'=>0,
+			'name'=>'channel',
+			'data'=>array(
+					'id'=>$peer_id,
+					'report_interval'=>10,
+					'peers'=>get_peers($roomDir,$peer_id)
+			)
 		);
 		echo json_encode($out);
 		break;
@@ -60,17 +61,18 @@ switch($route[1]){
 		break;
 }
 function insertPeer($room,$info){
-	file_put_contents($room.$info['id'],json_encode($info));
+	file_put_contents($room.'/'.$info['id'],json_encode($info));
 }
 function get_peers($room,$exclude=''){
-	$arr = glob(__DIR__ . '/' .$room . '*');
+	$arr = glob(__DIR__ . '/' .$room . '/*');
 	if($arr){
 		$out = array();
 		$expTime = time()-30;
 		foreach($arr as $v){
 			if(filemtime($v)>$expTime){
-				if($v!=__DIR__ . '/' .$room . $exclude){
-					$out[] = json_decode(file_get_contents($v));
+				if($v!=__DIR__ . '/' .$room . '/' . $exclude){
+					$json = json_decode(file_get_contents($v));
+					$out[] = (object)array('id'=>$json->{'id'});
 				}
 			}else{
 				unlink($v);
@@ -90,14 +92,5 @@ function makeDir($path){
 			chmod($path,0777);
 		}
 	}
-}
-function hashDir($hash){
-	$dir1 = substr($hash,0,1);
-	$dir2 = substr($hash,1,2);
-	return "$dir1/$dir2/";
-}
-function cleanSession($dir){
-	// glob(__DIR__ . $dir);
-	var_dump(glob(__DIR__ .$dir));
 }
 ?>
