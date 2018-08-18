@@ -55,13 +55,29 @@ switch($route){
 		);
 		echo json_encode($out);
 		break;
-	case'get_peers':
-		$info_hash = md5($_GET['info_hash']);
-		$peer_id = $_GET['peer_id'];
-		$roomDir = 'peers/'.hashDir($info_hash);
-		$out = array(
-			'peers'=>get_peers($roomDir,$peer_id),
-		);
+	case'peers':
+		$channel = $_GET['channel'];
+		$peer_id =  $_GET['node'];
+		$roomDir = 'peers/' . $channel;
+		if ( file_exists($roomDir . '/' . $peer_id) ) {
+			$out = array(
+				'ret'=>0,
+				'name'=>'channel',
+				'data'=>array(
+						'peers'=>get_peers($roomDir,$peer_id)
+				)
+			);
+		}
+		else {
+			$out = array(
+				'ret'=>-1,
+				'name'=>'errmsg',
+				'data'=>array(
+						'err'=>0,
+						'msg'=>'Not Register Node'
+				)
+			);
+		}
 		echo json_encode($out);
 		break;
 	case'stats':
