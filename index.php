@@ -53,11 +53,44 @@ switch($route){
 		);
 		echo json_encode($out);
 		break;
-	case'heartbeat':
-		$info_hash = md5($_GET['info_hash']);
-		$peer_id = $_GET['peer_id'];
-		$roomDir = '/peers/'.hashDir($info_hash);
-		touch(__DIR__ .$roomDir.$peer_id);
+	case'stats':
+		$channel = $_GET['channel'];
+		$node =  $_GET['node'];
+		$out = array(
+			'ret'=>0,
+			'name'=>'stats',
+			'data'=>array()
+		);
+		echo json_encode($out);
+		$roomDir = 'peers/' . $channel;
+		$json = json_decode(file_get_contents( __DIR__ . '/' . $roomDir . '/' . $node) );
+		if ( !isset($post_data['conns']) ) {
+			$post_data['conns'] = 0;
+		}
+		if ( !isset($post_data['http']) ) {
+			$post_data['http'] = 0;
+		}
+		if ( !isset($post_data['p2p']) ) {
+			$post_data['p2p'] = 0;
+		}
+		if ( !isset($post_data['failConns']) ) {
+			$post_data['failConns'] = 0;
+		}
+		insertPeer(
+			$roomDir,
+			array(
+				"id"=>$json->{'id'},
+				"device"=>$json->{'device'},
+				"netType"=>$json->{'netType'},
+				"host"=>$json->{'host'},
+				"version"=>$json->{'version'},
+				"tag"=>$json->{'tag'},
+				"conns"=>$post_data['conns'],
+				"http"=>$post_data['http'],
+				"p2p"=>$post_data['p2p'],
+				"failConns"=>$post_data['failConns']
+			)
+		);
 		break;
 }
 function insertPeer($room,$info){
