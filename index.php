@@ -6,6 +6,17 @@ $route = $_GET['command'];
 $input = file_get_contents("php://input");
 $post_data = json_decode($input, true);
 
+# CORS
+if (isset($_SERVER['HTTP_ORIGIN'])) {
+	header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
+}
+else {
+	header('Access-Control-Allow-Origin: *');
+}
+header('Access-Control-Allow-Credentials: true');
+header('Content-Type: application/json; charset=UTF-8');
+header('Vary: Origin');
+
 switch($route){
 	case'channel':
 		$channel = $post_data['channel'];
